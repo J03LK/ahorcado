@@ -49,7 +49,7 @@ const LEVELS: Levels = {
     }
 };
 
-const LEVEL_TIME_LIMIT = 180; // 3 minutos en segundos
+const LEVEL_TIME_LIMIT = 120; // 3 minutos en segundos
 
 export default function GameScreen() {
     const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -161,7 +161,7 @@ export default function GameScreen() {
                 setWordsCompletedInLevel(prev => {
                     const newWordsCompleted = prev + 1;
                     if (newWordsCompleted >= 3) {
-                        setTimeout(handleLevelComplete, 500);
+                        setTimeout(handleLevelComplete, 100);
                     }
                     return newWordsCompleted;
                 });
@@ -199,6 +199,7 @@ export default function GameScreen() {
             ]
         );
     };
+    
 
     return (
         <ImageBackground
