@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { View, TextInput, TouchableOpacity, Text, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { ref, get } from 'firebase/database';
-import { db } from '../config/firebase.config'; // Asegúrate de importar la configuración correcta de Firebase.
+import { db } from '../config/firebase.config';
 
 interface LoginScreenProps {
-    navigation: any; // Si estás usando `@react-navigation/native-stack`, ajusta el tipo según corresponda.
+    navigation: any;
 }
 
 export default function LoginScreen({ navigation }: LoginScreenProps) {
@@ -87,6 +87,13 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
                 )}
             </TouchableOpacity>
 
+            <TouchableOpacity 
+                style={[styles.rankingButton]} 
+                onPress={() => navigation.navigate('Leaderboard')}
+            >
+                <Text style={styles.buttonText}>🏆 Ver Ranking</Text>
+            </TouchableOpacity>
+
             <TouchableOpacity onPress={() => navigation.navigate('Register')} disabled={loading}>
                 <Text style={styles.link}>¿No tienes cuenta? Regístrate</Text>
             </TouchableOpacity>
@@ -115,6 +122,12 @@ const styles = StyleSheet.create({
     },
     button: {
         backgroundColor: '#007AFF',
+        padding: 15,
+        borderRadius: 5,
+        marginTop: 10,
+    },
+    rankingButton: {
+        backgroundColor: '#4CAF50', // Color verde para diferenciarlo
         padding: 15,
         borderRadius: 5,
         marginTop: 10,
