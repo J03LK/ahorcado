@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
-import { ref, query, orderByChild, get } from 'firebase/database';
+import { ref, query, orderByChild, limitToLast, get } from 'firebase/database';
 import { db } from '../config/firebase.config';
 
 interface UserScore {
@@ -21,30 +21,35 @@ export default function LeaderboardScreen() {
     const loadLeaderboard = async () => {
         try {
             const usersRef = ref(db, 'users');
-            const usersQuery = query(usersRef, orderByChild('score'));
-            const snapshot = await get(usersQuery);
-
+            const snapshot = await get(usersRef);
+            
             if (snapshot.exists()) {
                 const leaderboardData: UserScore[] = [];
+                
                 snapshot.forEach((child) => {
-                    const userData = child.val();
-                    // Verificar que el usuario tenga una puntuación
-                    if (userData.score !== undefined) {
-                        leaderboardData.push({
-                            id: child.key || '',
-                            username: userData.username || userData.email || 'Usuario Anónimo',
-                            score: userData.score || 0,
-                            gamesPlayed: userData.gamesPlayed || 0
-                        });
-                    }
+                    const data = child.val();
+                    console.log('Raw user data:', data); // Para debugging
+                    
+                    // Accedemos a los datos correctamente a través de gameStats
+                    leaderboardData.push({
+                        id: child.key || '',
+                        username: data.username || 'Usuario',
+                        score: data.gameStats?.score || 0,
+                        gamesPlayed: data.gameStats?.gamesPlayed || 0
+                    });
                 });
 
-                // Ordenar por puntuación de mayor a menor
-                leaderboardData.sort((a, b) => b.score - a.score);
-                setScores(leaderboardData);
+                // Ordenamos por puntuación de mayor a menor
+                const sortedData = leaderboardData.sort((a, b) => b.score - a.score);
+                console.log('Sorted leaderboard data:', sortedData); // Para debugging
+                
+                setScores(sortedData);
+            } else {
+                console.log('No hay datos disponibles');
+                setScores([]);
             }
         } catch (error) {
-            console.error('Error loading leaderboard:', error);
+            console.error('Error cargando el leaderboard:', error);
         } finally {
             setLoading(false);
         }
@@ -52,14 +57,10 @@ export default function LeaderboardScreen() {
 
     const renderItem = ({ item, index }: { item: UserScore; index: number }) => (
         <View style={styles.scoreRow}>
-            <View style={styles.rankContainer}>
-                <Text style={styles.position}>{index + 1}</Text>
-            </View>
-            <View style={styles.userInfo}>
-                <Text style={styles.username}>{item.username}</Text>
-                <Text style={styles.gamesPlayed}>{item.gamesPlayed} juegos</Text>
-            </View>
+            <Text style={styles.position}>{index + 1}</Text>
+            <Text style={styles.username}>{item.username}</Text>
             <Text style={styles.score}>{item.score}</Text>
+            <Text style={styles.gamesPlayed}>{item.gamesPlayed} juegos</Text>
         </View>
     );
 
@@ -73,16 +74,15 @@ export default function LeaderboardScreen() {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>🏆 Tabla de Puntuaciones</Text>
+            <Text style={styles.title}>Tabla de Puntuaciones</Text>
             
-            {scores.length === 0 ? (
-                <Text style={styles.noScores}>No hay puntuaciones disponibles</Text>
-            ) : (
+            {scores.length > 0 ? (
                 <>
                     <View style={styles.headerRow}>
-                        <Text style={styles.headerPosition}>Pos</Text>
-                        <Text style={styles.headerUsername}>Jugador</Text>
+                        <Text style={styles.headerPosition}>#</Text>
+                        <Text style={styles.headerUsername}>Usuario</Text>
                         <Text style={styles.headerScore}>Puntos</Text>
+                        <Text style={styles.headerGames}>Juegos</Text>
                     </View>
 
                     <FlatList
@@ -92,6 +92,8 @@ export default function LeaderboardScreen() {
                         contentContainerStyle={styles.listContainer}
                     />
                 </>
+            ) : (
+                <Text style={styles.noDataText}>No hay puntuaciones disponibles</Text>
             )}
         </View>
     );
@@ -101,7 +103,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         padding: 16,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: '#fff',
     },
     loadingContainer: {
         flex: 1,
@@ -113,7 +115,6 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         marginBottom: 20,
         textAlign: 'center',
-        color: '#333',
     },
     headerRow: {
         flexDirection: 'row',
@@ -121,74 +122,59 @@ const styles = StyleSheet.create({
         borderBottomWidth: 2,
         borderBottomColor: '#007AFF',
         marginBottom: 10,
-        backgroundColor: '#fff',
-        paddingHorizontal: 15,
-        borderRadius: 10,
     },
     headerPosition: {
-        width: 50,
+        width: 40,
         fontWeight: 'bold',
-        color: '#333',
     },
     headerUsername: {
-        flex: 1,
+        flex: 2,
         fontWeight: 'bold',
-        color: '#333',
     },
     headerScore: {
+        width: 70,
+        textAlign: 'right',
+        fontWeight: 'bold',
+    },
+    headerGames: {
         width: 80,
         textAlign: 'right',
         fontWeight: 'bold',
-        color: '#333',
     },
     listContainer: {
         paddingBottom: 20,
     },
     scoreRow: {
         flexDirection: 'row',
+        paddingVertical: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: '#ddd',
         alignItems: 'center',
-        backgroundColor: '#fff',
-        marginVertical: 4,
-        padding: 15,
-        borderRadius: 10,
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 2,
-    },
-    rankContainer: {
-        width: 50,
     },
     position: {
+        width: 40,
         fontSize: 16,
-        fontWeight: 'bold',
-        color: '#333',
-    },
-    userInfo: {
-        flex: 1,
     },
     username: {
+        flex: 2,
         fontSize: 16,
-        fontWeight: '500',
-        color: '#333',
     },
     score: {
-        width: 80,
+        width: 70,
         textAlign: 'right',
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: 'bold',
-        color: '#007AFF',
     },
     gamesPlayed: {
-        fontSize: 12,
+        width: 80,
+        textAlign: 'right',
+        fontSize: 14,
         color: '#666',
-        marginTop: 2,
     },
-    noScores: {
+    noDataText: {
         textAlign: 'center',
-        marginTop: 20,
         fontSize: 16,
+        marginTop: 20,
         color: '#666',
     },
 });
